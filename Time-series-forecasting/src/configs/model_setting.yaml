@@ -1,0 +1,51 @@
+DLinear:
+  moving_avg: 25
+  enc_in: 125 
+  dropout: 0.1
+  individual: false
+
+Autoformer:
+  moving_avg: 25
+  d_model: 512
+  n_heads: 8
+  e_layers: 2
+  d_layers: 1
+  factor: 3
+  enc_in: 7
+  dec_in: 7
+  c_out: 7
+  d_ff: 2048
+  dropout: 0.1
+  embed: timeF
+  activation: gelu
+  freq: h
+  output_attention: false
+
+PatchTST:
+  moving_avg: 25
+  d_model: 512
+  n_heads: 8
+  e_layers: 2
+  d_layers: 1
+  enc_in: 7
+  dec_in: 7
+  c_out: 7
+  d_ff: 128
+  dropout: 0.3
+  fc_dropout: 0.3
+  head_dropout: 0
+  individual: false
+  patch_len: 16
+  stride: 8
+  padding_patch: 0
+  embed: timeF
+  activation: gelu
+  freq: h
+  output_attention: false
+  revin: true
+  affine: true
+  subtract_last: false
+  decomposition: true
+  kernel_size: 25
+
+# Time-LLM, Koopa, TimesNet, PatchTST, RevIN, Autoformer

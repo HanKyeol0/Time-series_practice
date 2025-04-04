@@ -1,0 +1,58 @@
+{
+  "os": "Linux-5.15.0-67-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.10.12",
+  "startedAt": "2025-04-03T18:15:57.835193Z",
+  "args": [
+    "--model_name",
+    "Autoformer",
+    "--default_cfg",
+    "./configs/default_setting.yaml",
+    "--model_cfg",
+    "./configs/model_setting.yaml",
+    "DATASET.datadir",
+    "./dataset/ETT-small/",
+    "DATASET.dataname",
+    "ETTh1.csv",
+    "DEFAULT.exp_name",
+    "forecasting_ETTh1.csv"
+  ],
+  "program": "/root/Time-series/Time-series-forecasting/src/main.py",
+  "codePath": "main.py",
+  "email": "hankyeol@snu.ac.kr",
+  "root": "/root/Time-series/Time-series-forecasting/src",
+  "host": "aee601c3add7",
+  "executable": "/usr/bin/python",
+  "codePathLocal": "main.py",
+  "cpu_count": 4,
+  "cpu_count_logical": 8,
+  "gpu": "NVIDIA GeForce RTX 2080 Ti",
+  "gpu_count": 2,
+  "disk": {
+    "/": {
+      "total": "3936290357248",
+      "used": "112144384000"
+    }
+  },
+  "memory": {
+    "total": "67350802432"
+  },
+  "cpu": {
+    "count": 4,
+    "countLogical": 8
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA GeForce RTX 2080 Ti",
+      "memoryTotal": "11811160064",
+      "cudaCores": 4352,
+      "architecture": "Turing"
+    },
+    {
+      "name": "NVIDIA GeForce GTX TITAN X",
+      "memoryTotal": "12884901888",
+      "cudaCores": 3072,
+      "architecture": "Maxwell"
+    }
+  ],
+  "cudaVersion": "12.2"
+}

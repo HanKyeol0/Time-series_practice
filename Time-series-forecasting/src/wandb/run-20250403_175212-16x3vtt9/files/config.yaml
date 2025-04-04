@@ -1,0 +1,118 @@
+_wandb:
+    value:
+        cli_version: 0.19.8
+        m: []
+        python_version: 3.10.12
+        t:
+            "1":
+                - 1
+                - 5
+                - 49
+                - 53
+                - 55
+                - 71
+            "2":
+                - 1
+                - 5
+                - 49
+                - 53
+                - 55
+                - 71
+            "3":
+                - 13
+                - 16
+                - 23
+                - 55
+                - 61
+            "4": 3.10.12
+            "5": 0.19.8
+            "8":
+                - 5
+            "12": 0.19.8
+            "13": linux-x86_64
+DATASET:
+    value:
+        batch_size: 128
+        datadir: ./dataset/
+        dataname: ETTh1.csv
+        del_feature: null
+        drop_last: true
+        label_len: 0
+        num_workers: 0
+        pin_memory: true
+        pred_len: 96
+        scaler: standard
+        seq_len: 96
+        shuffle: true
+        split_rate:
+            - 0.7
+            - 0.1
+            - 0.2
+        time_embedding:
+            - 0
+            - d
+DEFAULT:
+    value:
+        exp_name: forecasting
+        seed: 42
+LOSS:
+    value:
+        loss_name: mse
+MODEL:
+    value:
+        modelname: Autoformer
+MODELSETTING:
+    value:
+        activation: gelu
+        batch_size: 128
+        c_out: 7
+        d_ff: 2048
+        d_layers: 1
+        d_model: 512
+        dec_in: 7
+        dim_in: 7
+        dropout: 0.1
+        e_layers: 2
+        embed: timeF
+        enc_in: 7
+        factor: 3
+        freq: h
+        label_len: 0
+        moving_avg: 25
+        n_heads: 8
+        output_attention: false
+        pred_len: 96
+        seq_len: 96
+OPTIMIZER:
+    value:
+        lr: 0.0001
+        opt_name: adamw
+        params:
+            weight_decay: 0.0005
+RESULT:
+    value:
+        savedir: ./saved_model
+TRAIN:
+    value:
+        ckp_metric: loss
+        data_num: 0
+        del_pt_file: true
+        early_stopping_count: 5
+        early_stopping_metric: MSE
+        epoch: 1
+        eval_epochs: 1
+        fine_tuning_method: full
+        grad_accum_steps: 1
+        log_epochs: 1
+        log_eval_iter: 100
+        lradj: type1
+        mixed_precision: "no"
+        pre_training: false
+        resume: null
+        return_output: false
+        wandb:
+            entity: hankyeol
+            exp_name: Autoformer_0
+            iter: 50
+            project_name: pretraining-TSF
+            use: true

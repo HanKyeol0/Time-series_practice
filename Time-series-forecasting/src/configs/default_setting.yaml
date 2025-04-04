@@ -1,0 +1,55 @@
+DEFAULT:
+  exp_name: forecasting 
+  seed: 42
+
+DATASET:
+  datadir: ./dataset/ETT-small/
+  dataname: ETTh1.csv
+  scaler: standard
+  batch_size: 32
+  shuffle: true
+  num_workers: 0
+  pin_memory: true
+  drop_last: True
+  seq_len: 96
+  label_len: 0
+  pred_len: 96
+  split_rate: [0.7, 0.1, 0.2]
+  time_embedding: [0, 'm']
+  del_feature: null
+
+TRAIN:
+  epoch: 50
+  ckp_metric: MAE
+  eval_epochs: 1
+  log_epochs: 1
+  log_eval_iter: 100
+  early_stopping_count: 5
+  resume: null
+  pre_training: false
+  data_num: 0
+  fine_tuning_method: full
+  grad_accum_steps: 1
+  mixed_precision: 'no'
+  early_stopping_metric: 'MSE'
+  lradj: 'type1'
+  return_output: false
+  del_pt_file: True
+  wandb: 
+    use: true
+    iter: 50
+    exp_name: Autoformer_0
+    project_name: pretraining-TSF
+    entity: hankyeol
+    
+LOSS:
+  loss_name: mse
+
+OPTIMIZER:
+  opt_name: adamw
+  lr: 0.0001
+  params:
+    weight_decay: 0.0005
+
+RESULT:
+  savedir: './saved_model'
