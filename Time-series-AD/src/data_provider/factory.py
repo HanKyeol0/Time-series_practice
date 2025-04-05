@@ -3,6 +3,7 @@ from data_provider.load_dataset import load_dataset
 from data_provider.build_dataset import BuildDataset
 from utils.scaling import apply_scaling
 import warnings
+from torch.utils.data import DataLoader
 
 warnings.filterwarnings('ignore')
 
@@ -53,13 +54,34 @@ def create_dataloader(
                     )
 
     # build dataset
-    trn_dataset = BuildDataset()
-    val_dataset = BuildDataset()
-    tst_dataset = BuildDataset()
+    trn_dataset = BuildDataset(trn, trn_ts, seq_len, stride_len)
+    val_dataset = BuildDataset(val, val_ts, seq_len, stride_len)
+    tst_dataset = BuildDataset(tst, tst_ts, seq_len, stride_len)
 
     # torch dataloader
-    trn_dataloader = None
-    val_dataloader = None
-    tst_dataloader = None
+    trn_dataloader = DataLoader(
+        trn_dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        drop_last=drop_last,
+    )
+    val_dataloader = DataLoader(
+        val_dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        drop_last=drop_last,
+    )
+    tst_dataloader = DataLoader(
+        tst_dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=num_workers,
+        pin_memory=pin_memory,
+        drop_last=drop_last,
+    )
 
-    return trn_dataloader, val_dataloader, tst_dataloader, var
+    return trn_dataloader, val_dataloader, tst_dataloader, var, label
