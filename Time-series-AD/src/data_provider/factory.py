@@ -38,6 +38,10 @@ def create_dataloader(
     """
     
     trn, trn_ts, val, val_ts, tst, tst_ts, var, label = load_dataset(
+        datadir=datadir,
+        dataname=dataname,
+        val_split_rate = val_split_rate,
+        time_embedding=time_embedding,
                             )
     
     # scaling (minmax, minmax square, minmax m1p1, standard)
