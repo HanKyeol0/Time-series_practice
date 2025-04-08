@@ -54,9 +54,9 @@ def create_dataloader(
                     )
 
     # build dataset
-    trn_dataset = BuildDataset(trn, trn_ts, seq_len, stride_len)
-    val_dataset = BuildDataset(val, val_ts, seq_len, stride_len)
-    tst_dataset = BuildDataset(tst, tst_ts, seq_len, stride_len)
+    trn_dataset = BuildDataset(trn, trn_ts, seq_len, stride_len, None, 'train')
+    val_dataset = BuildDataset(val, val_ts, seq_len, stride_len, None, 'val')
+    tst_dataset = BuildDataset(tst, tst_ts, seq_len, stride_len, label, 'test')
 
     # torch dataloader
     trn_dataloader = DataLoader(
