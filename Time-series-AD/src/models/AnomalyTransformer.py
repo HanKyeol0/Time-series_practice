@@ -54,45 +54,74 @@ class Encoder(nn.Module):
 
 
 class AnomalyTransformer(nn.Module):
-    def __init__(self, win_size, enc_in, c_out, d_model=512, n_heads=8, e_layers=3, d_ff=512,
-                 dropout=0.0, activation='gelu', output_attention=True):
+    def __init__(self, configs, input, mode='train'):
         super(AnomalyTransformer, self).__init__()
-        self.output_attention = output_attention
+        self.seq_len = configs.seq_len
+        self.label_len = configs.label_len
+        self.pred_len = configs.pred_len
+        self.enc_in = configs.enc_in
+        self.d_model = configs.d_model
+        self.dropout = configs.dropout
+        self.output_attention = configs.output_attention
+        self.n_heads = configs.n_heads
+        self.d_ff = configs.d_ff
+        self.activation = configs.activation
+        self.e_layers = configs.e_layers
+        self.c_out = configs.c_out
+
+        self.input = input
+        self.mode = mode
+        self.criterion = nn.MSELoss()
 
         # Encoding
-        self.embedding = DataEmbedding(enc_in, d_model, dropout)
+        self.embedding = DataEmbedding(self.enc_in, self.d_model, self.dropout)
 
         # Encoder
         self.encoder = Encoder(
             [
                 EncoderLayer(
                     AttentionLayer(
-                        AnomalyAttention(win_size, False, attention_dropout=dropout, output_attention=output_attention),
-                        d_model, n_heads),
-                    d_model,
-                    d_ff,
-                    dropout=dropout,
-                    activation=activation
-                ) for l in range(e_layers)
+                        AnomalyAttention(self.seq_len, False, attention_dropout=self.dropout, output_attention=self.output_attention),
+                        self.d_model, self.n_heads),
+                    self.d_model,
+                    self.d_ff,
+                    dropout=self.dropout,
+                    activation=self.activation
+                ) for l in range(self.e_layers)
             ],
-            norm_layer=torch.nn.LayerNorm(d_model)
+            norm_layer=torch.nn.LayerNorm(self.d_model)
         )
 
-        self.projection = nn.Linear(d_model, c_out, bias=True)
+        self.projection = nn.Linear(self.d_model, self.c_out, bias=True)
+
+    def my_kl_loss(p, q):
+        res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
+        return torch.mean(torch.sum(res, dim=-1), dim=1)
 
     def forward(self, x):
         enc_out = self.embedding(x)
         enc_out, series, prior, sigmas = self.encoder(enc_out)
         enc_out = self.projection(enc_out)
 
+        # calculate Association discrepancy
+        series_loss = 0.0
+        prior_loss = 0.0
+        for u in range(len(prior)):
+            series_loss += (torch.mean(self.my_kl_loss(series[u], (
+                prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)).detach())) + torch.mean(
+                    self.my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)).detach(), series[u])))
+            prior_loss += (torch.mean(self.my_kl_loss(
+                (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)),
+                series[u].detach())) + torch.mean(
+                self.my_kl_loss(series[u].detach(), (
+                    prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)))))
+        
+        series_loss = series_loss / len(prior)
+        prior_loss = prior_loss / len(prior)
+
+        rec_loss = self.criterion(enc_out, input)
+
         if self.output_attention:
             return enc_out, series, prior, sigmas
         else:
             return enc_out  # [B, L, D]
-        
-class Build_AnomalyTransformer(object):
-    DEFAULTS = {}
-
-    def __init__(self, config):
-        self.config = config
-        self.model = None

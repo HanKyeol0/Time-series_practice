@@ -7,3 +7,16 @@ LSTM_AE:
   dropout: 0.1
   res_connection: false
   return_hiddens: false
+
+AnomalyTransformer:
+  enc_in: 25 # PSM dataset has 25 features
+  c_out: 25 # PSM dataset has 25 features
+  d_model: 512 # Appendix G: d_model=512 was the best for PSM dataset
+  dropout: 0.1
+  output_attention: false
+  n_heads: 8 # specified in the paper
+  d_ff: 2048
+  activation: gelu
+  e_layers: 3 # Appendix G (and "Implementation details"): L=3 was the best for PSM dataset
+
+#  python main.py --anormly_ratio 1 --num_epochs 3    --batch_size 256  --mode train --dataset PSM  --data_path dataset/PSM --input_c 25    --output_c 25
