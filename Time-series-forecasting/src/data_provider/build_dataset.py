@@ -14,7 +14,7 @@ class BuildDataset(Dataset):
     def __len__(self):        
         return self.valid_window
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int) -> dict:
         x_start = idx
         x_end = idx + self.seq_len
         y_start = idx + self.seq_len - self.label_len

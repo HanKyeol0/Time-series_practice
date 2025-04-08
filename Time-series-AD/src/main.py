@@ -95,6 +95,7 @@ def main(cfg):
     # wandb
     if cfg.TRAIN.wandb.use:
         # initialize wandb
+        wandb.login(key=os.getenv('WANDB_API_KEY'))
         wandb.init(name    = cfg.DEFAULT.exp_name, 
                     group   = cfg.TRAIN.wandb.exp_name,
                     project = cfg.TRAIN.wandb.project_name, 
