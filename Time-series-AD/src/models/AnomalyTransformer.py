@@ -68,8 +68,9 @@ class AnomalyTransformer(nn.Module):
         self.activation = configs.activation
         self.e_layers = configs.e_layers
         self.c_out = configs.c_out
+        self.k = configs.k
 
-        self.input = input
+        self.input = input.float()
         self.mode = mode
         self.criterion = nn.MSELoss()
 
@@ -119,7 +120,12 @@ class AnomalyTransformer(nn.Module):
         series_loss = series_loss / len(prior)
         prior_loss = prior_loss / len(prior)
 
-        rec_loss = self.criterion(enc_out, input)
+        rec_loss = self.criterion(enc_out, self.input)
+
+        loss1 = rec_loss - self.k * series_loss
+        loss2 = rec_loss + self.k * prior_loss
+
+        return enc_out, [loss1, loss2]
 
         if self.output_attention:
             return enc_out, series, prior, sigmas

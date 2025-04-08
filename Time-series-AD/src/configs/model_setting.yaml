@@ -18,5 +18,6 @@ AnomalyTransformer:
   d_ff: 2048
   activation: gelu
   e_layers: 3 # Appendix G (and "Implementation details"): L=3 was the best for PSM dataset
+  k: 3 # Specified in "Implementation details". Actually it's λ in the paper.
 
 #  python main.py --anormly_ratio 1 --num_epochs 3    --batch_size 256  --mode train --dataset PSM  --data_path dataset/PSM --input_c 25    --output_c 25
