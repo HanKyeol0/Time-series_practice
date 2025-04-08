@@ -124,8 +124,9 @@ class AnomalyTransformer(nn.Module):
 
         loss1 = rec_loss - self.k * series_loss
         loss2 = rec_loss + self.k * prior_loss
+        loss = loss1 + loss2
 
-        return enc_out, [loss1, loss2]
+        return enc_out, loss
 
         if self.output_attention:
             return enc_out, series, prior, sigmas
