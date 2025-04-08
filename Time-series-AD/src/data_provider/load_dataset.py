@@ -39,8 +39,6 @@ def load_dataset(
         test = test_df.iloc[:, 1:]
         label = test_label_df.iloc[:, 1:]
 
-        print(label)
-
     var = trn.shape[1]
 
     return trn, trn_ts, val, val_ts, test, test_ts, var, label
