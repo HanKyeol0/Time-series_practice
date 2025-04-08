@@ -60,6 +60,9 @@ def training_dl(
         for idx, item in enumerate(trn_dataloader):
             data_time_m.update(time.time() - end_time)
 
+            inputs = item['x'].to(accelerator.device)
+            inputs_ts = item['x_ts'].to(accelerator.device)
+
             """
             목적: 구성한 Dataloader를 바탕으로 모델의 입력을 구성
             조건
@@ -202,12 +205,9 @@ def test_dl(model, dataloader, criterion, accelerator: Accelerator, log_interval
         for idx, item in enumerate(dataloader):
             data_time_m.update(time.time() - end_time)
 
-            """
-            목적: 구성한 Dataloader를 바탕으로 모델의 입력을 구성
-            조건
-            - 구성한 Dataloader에 적합한 입력을 통하여 모델의 출력을 계산
-            - model은 LSTM_AE를 사용하고 있기 때문에, 코드 참고하여 작성
-            """
+            inputs = item['x'].to(accelerator.device)
+            inputs_ts = item['x_ts'].to(accelerator.device)
+            label = item['label'].to(accelerator.device) if 'label' in item else None
 
             outputs, loss, score = model()
 
@@ -222,7 +222,7 @@ def test_dl(model, dataloader, criterion, accelerator: Accelerator, log_interval
             total_outputs.append(outputs)
             total_score.append(score)
             total_targets.append(targets)
-            total_timestamp.append(input_timestamp.detach().cpu().numpy())
+            total_timestamp.append(inputs_ts.detach().cpu().numpy())
 
             if 'label' in item:
                 label = item['label'].detach().cpu().numpy()
