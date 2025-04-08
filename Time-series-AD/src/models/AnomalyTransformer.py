@@ -89,3 +89,10 @@ class AnomalyTransformer(nn.Module):
             return enc_out, series, prior, sigmas
         else:
             return enc_out  # [B, L, D]
+        
+class Build_AnomalyTransformer(object):
+    DEFAULTS = {}
+
+    def __init__(self, config):
+        self.config = config
+        self.model = None
