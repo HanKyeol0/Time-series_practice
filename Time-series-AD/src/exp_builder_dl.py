@@ -71,7 +71,7 @@ def training_dl(
             - model은 LSTM_AE를 사용하고 있기 때문에, 코드 참고하여 작성
             - 모든 모델에서 모델만 변경할 경우 작동될 수 있도록 구현
             """
-            outputs, loss = model()
+            outputs, loss = model(inputs, inputs_ts, None, 'TRAIN')
 
             loss = accelerator.gather(loss).mean()
             outputs, targets = accelerator.gather_for_metrics((outputs.contiguous(), targets.contiguous()))
@@ -209,8 +209,11 @@ def test_dl(model, dataloader, criterion, accelerator: Accelerator, log_interval
             inputs_ts = item['x_ts'].to(accelerator.device)
             label = item['label'].to(accelerator.device) if 'label' in item else None
 
-            outputs, loss, score = model()
-
+            if name == 'VALID':
+                outputs, loss = model(inputs, inputs_ts, None, name)
+            elif name == 'TEST':
+                outputs, loss, score = model(inputs, inputs_ts, label, name)
+    
             loss = accelerator.gather(loss).mean()
             loss = torch.mean(loss)
             outputs, targets = accelerator.gather_for_metrics((outputs.contiguous(), targets.contiguous()))
@@ -220,9 +223,10 @@ def test_dl(model, dataloader, criterion, accelerator: Accelerator, log_interval
             targets = targets.detach().cpu().numpy()
 
             total_outputs.append(outputs)
-            total_score.append(score)
             total_targets.append(targets)
             total_timestamp.append(inputs_ts.detach().cpu().numpy())
+            if name == 'TEST':
+                total_score.append(score)
 
             if 'label' in item:
                 label = item['label'].detach().cpu().numpy()

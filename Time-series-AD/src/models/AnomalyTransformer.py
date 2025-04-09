@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import numpy as np
 
 from layers.SelfAttention_Family import AnomalyAttention, AttentionLayer
 from layers.Embed import DataEmbedding, TokenEmbedding
@@ -54,7 +55,7 @@ class Encoder(nn.Module):
 
 
 class AnomalyTransformer(nn.Module):
-    def __init__(self, configs, input, mode='train'):
+    def __init__(self, configs):
         super(AnomalyTransformer, self).__init__()
         self.seq_len = configs.seq_len
         self.label_len = configs.label_len
@@ -70,8 +71,6 @@ class AnomalyTransformer(nn.Module):
         self.c_out = configs.c_out
         self.k = configs.k
 
-        self.input = input.float()
-        self.mode = mode
         self.criterion = nn.MSELoss()
 
         # Encoding
@@ -99,36 +98,97 @@ class AnomalyTransformer(nn.Module):
         res = p * (torch.log(p + 0.0001) - torch.log(q + 0.0001))
         return torch.mean(torch.sum(res, dim=-1), dim=1)
 
-    def forward(self, x):
+    def forward(self, x, x_mark, label=None, mode='TRAIN'):
         enc_out = self.embedding(x)
         enc_out, series, prior, sigmas = self.encoder(enc_out)
         enc_out = self.projection(enc_out)
-
-        # calculate Association discrepancy
-        series_loss = 0.0
-        prior_loss = 0.0
-        for u in range(len(prior)):
-            series_loss += (torch.mean(self.my_kl_loss(series[u], (
-                prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)).detach())) + torch.mean(
-                    self.my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)).detach(), series[u])))
-            prior_loss += (torch.mean(self.my_kl_loss(
-                (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)),
-                series[u].detach())) + torch.mean(
-                self.my_kl_loss(series[u].detach(), (
-                    prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)))))
         
-        series_loss = series_loss / len(prior)
-        prior_loss = prior_loss / len(prior)
+        rec_loss = torch.mean(self.criterion(enc_out, x))
 
-        rec_loss = self.criterion(enc_out, self.input)
+        if mode == 'TRAIN' or mode == 'VAL':
+            # calculate Association discrepancy
+            series_loss = 0.0
+            prior_loss = 0.0
+            for u in range(len(prior)):
+                series_loss += (torch.mean(self.my_kl_loss(series[u], (
+                    prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)).detach())) + torch.mean(
+                        self.my_kl_loss((prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)).detach(), series[u])))
+                prior_loss += (torch.mean(self.my_kl_loss(
+                    (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)),
+                    series[u].detach())) + torch.mean(
+                    self.my_kl_loss(series[u].detach(), (
+                        prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1, self.seq_len)))))
+            
+            series_loss = series_loss / len(prior)
+            prior_loss = prior_loss / len(prior)
 
-        loss1 = rec_loss - self.k * series_loss
-        loss2 = rec_loss + self.k * prior_loss
-        loss = loss1 + loss2
+            loss1 = rec_loss - self.k * series_loss
+            loss2 = rec_loss + self.k * prior_loss
+            loss = loss1 + loss2
 
-        return enc_out, loss
+            return enc_out, loss
 
-        if self.output_attention:
-            return enc_out, series, prior, sigmas
-        else:
-            return enc_out  # [B, L, D]
+        elif mode == 'TEST':
+            temperature = 50
+            attens_energy = []
+            anomaly_ratio = 0.1
+
+            # (1) statistics on the train set
+            for u in range(len(prior)):
+                if u == 0:
+                    series_loss = self.my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                    self.win_size)).detach()) * temperature
+                    prior_loss = self.my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                    self.win_size)),
+                        series[u].detach()) * temperature
+                else:
+                    series_loss += self.my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                    self.win_size)).detach()) * temperature
+                    prior_loss += self.my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                    self.win_size)),
+                        series[u].detach()) * temperature
+
+            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
+            cri = metric * rec_loss
+            cri = cri.detach().cpu().numpy()
+            attens_energy.append(cri)    
+
+            attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
+            train_energy = np.array(attens_energy)
+
+            # (2) find the threshold
+            for u in range(len(prior)):
+                if u == 0:
+                    series_loss = self.my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   self.win_size)).detach()) * temperature
+                    prior_loss = self.my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                self.win_size)),
+                        series[u].detach()) * temperature
+                else:
+                    series_loss += self.my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   self.win_size)).detach()) * temperature
+                    prior_loss += self.my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                self.win_size)),
+                        series[u].detach()) * temperature
+                    
+            # Metric
+            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
+            cri = metric * loss
+            cri = cri.detach().cpu().numpy()
+            attens_energy.append(cri)     
+
+            attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
+            test_energy = np.array(attens_energy)
+            combined_energy = np.concatenate([train_energy, test_energy], axis=0)
+            thresh = np.percentile(combined_energy, 100 - anomaly_ratio)
+            print("Threshold :", thresh)
+
+            return enc_out, loss, score
