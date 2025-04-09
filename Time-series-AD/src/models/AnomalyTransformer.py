@@ -130,37 +130,9 @@ class AnomalyTransformer(nn.Module):
 
         elif mode == 'TEST':
             temperature = 50
-            attens_energy = []
             anomaly_ratio = 0.1
 
-            # (1) statistics on the train set
-            for u in range(len(prior)):
-                if u == 0:
-                    series_loss = self.my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                    self.win_size)).detach()) * temperature
-                    prior_loss = self.my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                    self.win_size)),
-                        series[u].detach()) * temperature
-                else:
-                    series_loss += self.my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                    self.win_size)).detach()) * temperature
-                    prior_loss += self.my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                    self.win_size)),
-                        series[u].detach()) * temperature
-
-            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
-            cri = metric * rec_loss
-            cri = cri.detach().cpu().numpy()
-            attens_energy.append(cri)    
-
-            attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
-            train_energy = np.array(attens_energy)
-
-            # (2) find the threshold
+            # find the threshold
             for u in range(len(prior)):
                 if u == 0:
                     series_loss = self.my_kl_loss(series[u], (
@@ -182,13 +154,38 @@ class AnomalyTransformer(nn.Module):
             # Metric
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
             cri = metric * loss
-            cri = cri.detach().cpu().numpy()
-            attens_energy.append(cri)     
+            cri = cri.detach().cpu().numpy() 
 
-            attens_energy = np.concatenate(attens_energy, axis=0).reshape(-1)
-            test_energy = np.array(attens_energy)
-            combined_energy = np.concatenate([train_energy, test_energy], axis=0)
-            thresh = np.percentile(combined_energy, 100 - anomaly_ratio)
+            test_energy = np.array(cri)
+            thresh = np.percentile(test_energy, 100 - anomaly_ratio)
             print("Threshold :", thresh)
+
+            # Evaluation on the test set
+            for u in range(len(prior)):
+                if u == 0:
+                    series_loss = self.my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   self.win_size)).detach()) * temperature
+                    prior_loss = self.my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                self.win_size)),
+                        series[u].detach()) * temperature
+                else:
+                    series_loss += self.my_kl_loss(series[u], (
+                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                   self.win_size)).detach()) * temperature
+                    prior_loss += self.my_kl_loss(
+                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
+                                                                                                self.win_size)),
+                        series[u].detach()) * temperature
+            # Metric
+            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
+            cri = metric * loss
+            cri = cri.detach().cpu().numpy()
+            test_energy = np.array(cri)
+            test_labels = np.array(label)
+            
+            pred = (test_energy > thresh).astype(int)
+            gt = test_labels.astype(int)
 
             return enc_out, loss, score
