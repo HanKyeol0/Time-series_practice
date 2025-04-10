@@ -132,34 +132,6 @@ class AnomalyTransformer(nn.Module):
             temperature = 50
             anomaly_ratio = 0.1
 
-            # find the threshold
-            for u in range(len(prior)):
-                if u == 0:
-                    series_loss = self.my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss = self.my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
-                else:
-                    series_loss += self.my_kl_loss(series[u], (
-                            prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                   self.win_size)).detach()) * temperature
-                    prior_loss += self.my_kl_loss(
-                        (prior[u] / torch.unsqueeze(torch.sum(prior[u], dim=-1), dim=-1).repeat(1, 1, 1,
-                                                                                                self.win_size)),
-                        series[u].detach()) * temperature
-                    
-            # Metric
-            metric = torch.softmax((-series_loss - prior_loss), dim=-1)
-            cri = metric * loss
-            cri = cri.detach().cpu().numpy() 
-
-            test_energy = np.array(cri)
-            thresh = np.percentile(test_energy, 100 - anomaly_ratio)
-            print("Threshold :", thresh)
-
             # Evaluation on the test set
             for u in range(len(prior)):
                 if u == 0:
