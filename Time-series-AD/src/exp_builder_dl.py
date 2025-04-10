@@ -248,7 +248,6 @@ def test_dl(model, dataloader, criterion, accelerator: Accelerator, log_interval
                                 data_time  = data_time_m))
 
             end_time = time.time()
-
     
     """
     목적: 시계열 이상탐지 Task의 평가 지표 계산
@@ -258,7 +257,40 @@ def test_dl(model, dataloader, criterion, accelerator: Accelerator, log_interval
     - 'VALID' 시에는 reconstruction loss만 도출
     """
     if name == 'TEST':
-        history = None
+        total_score = np.concatenate(total_score).flatten()
+        total_label = np.concatenate(total_label).flatten()
+           
+        best_result, best_threshold = bf_search(
+            score=total_score, 
+            label=total_label, 
+            start=np.min(total_score), 
+            end=np.max(total_score), 
+            step_num=100, 
+            display_freq=10, 
+            verbose=True
+        )
+        
+        # Extract individual metrics
+        f1, precision, recall, TP, TN, FP, FN, auc, auprc, latency = best_result
+
+        history = {
+            'f1': f1,
+            'precision': precision,
+            'recall': recall,
+            'TP': TP,
+            'TN': TN,
+            'FP': FP,
+            'FN': FN,
+            'AUC': auc,
+            'AUPRC': auprc,
+            'latency': latency,
+            'loss': losses_m.avg,
+            'best_threshold': best_threshold,
+        }
+
+        _logger.info(f'[✅ TEST DONE] F1: {f1:.4f} | Precision: {precision:.4f} | Recall: {recall:.4f} | AUC: {auc:.4f} | AUPRC: {auprc:.4f}')
+
     elif name == 'VALID':
-        history = None
+        history = {'loss': losses_m.avg}
+        
     return history

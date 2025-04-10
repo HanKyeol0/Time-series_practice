@@ -152,12 +152,7 @@ class AnomalyTransformer(nn.Module):
                         series[u].detach()) * temperature
             # Metric
             metric = torch.softmax((-series_loss - prior_loss), dim=-1)
-            cri = metric * loss
-            cri = cri.detach().cpu().numpy()
-            test_energy = np.array(cri)
-            test_labels = np.array(label)
-            
-            pred = (test_energy > thresh).astype(int)
-            gt = test_labels.astype(int)
+            score = metric * loss
+            score = score.detach().cpu().numpy()
 
             return enc_out, loss, score

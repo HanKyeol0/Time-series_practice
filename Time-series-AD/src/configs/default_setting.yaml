@@ -42,8 +42,8 @@ TRAIN:
     use: false
     iter: 500
     exp_name: default
-    project_name: 'KoreaBank'
-    entity: jinwoo
+    project_name: TSAD_practice
+    entity: hankyeol
 LOSS:
   loss_name: mse
 

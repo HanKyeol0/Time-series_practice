@@ -96,10 +96,10 @@ def main(cfg):
     if cfg.TRAIN.wandb.use:
         # initialize wandb
         wandb.login(key=os.getenv('WANDB_API_KEY'))
-        wandb.init(name    = cfg.DEFAULT.exp_name, 
-                    group   = cfg.TRAIN.wandb.exp_name,
-                    project = cfg.TRAIN.wandb.project_name, 
-                    entity  = cfg.TRAIN.wandb.entity, 
+        wandb.init(project = cfg.TRAIN.wandb.project_name,
+                   name    = cfg.DEFAULT.exp_name, 
+                    #group   = cfg.TRAIN.wandb.exp_name, 
+                    #entity  = cfg.TRAIN.wandb.entity, 
                     config  = OmegaConf.to_container(cfg))
         
     # build Model

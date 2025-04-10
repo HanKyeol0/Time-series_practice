@@ -20,4 +20,23 @@ AnomalyTransformer:
   e_layers: 3 # Appendix G (and "Implementation details"): L=3 was the best for PSM dataset
   k: 3 # Specified in "Implementation details". Actually it's λ in the paper.
 
+GDformer:
+  d_src:
+  d_tgt:
+  d_in:
+  g_n_head:
+  d_n_head:
+  d_k:
+  d_v:
+  d_out:
+  d_prd:
+  nodes:
+  enc_layers: 3
+  dec_layers: 3
+  max_diff_step: 3
+  droprate: 0.1
+  diff_type: Attention
+  adj_type: D
+  dynamic_adj_saved: false
+
 #  python main.py --anormly_ratio 1 --num_epochs 3    --batch_size 256  --mode train --dataset PSM  --data_path dataset/PSM --input_c 25    --output_c 25
